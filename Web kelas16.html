@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futuristic Cyber QR Attendance & Chat System</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --card-border: rgba(56, 189, 248, 0.2);
+            --primary-cyan: #00f2fe;
+            --primary-blue: #3b82f6;
+            --neon-green: #00e676;
+            --neon-amber: #ffb300;
+            --neon-red: #ff4655;
+            --neon-darkred: #e11d48;
+            --dev-purple: #c084fc;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --ios-wa-bg: #0b141a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 90px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .top-info-bar {
+            max-width: 1280px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .clock-display, .date-display {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            padding: 8px 18px;
+            border-radius: 30px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .clock-display { color: var(--primary-cyan); text-shadow: 0 0 8px var(--primary-cyan); }
+        .date-display { color: var(--dev-purple); text-shadow: 0 0 8px var(--dev-purple); }
+
+        header {
+            max-width: 1280px;
+            margin: 0 auto 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 18px 28px;
+            border-radius: 20px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, var(--primary-cyan), var(--dev-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info { display: flex; align-items: center; gap: 15px; }
+
+        #loginPage {
+            max-width: 480px;
+            margin: 30px auto 0;
+            animation: floatUp 0.6s ease-out;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+        }
+
+        .role-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .role-btn.active {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
+        }
+
+        .dev-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(192, 132, 252, 0.1);
+            border: 1px dashed var(--dev-purple);
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.85rem;
+            color: var(--dev-purple);
+        }
+
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            color: var(--text-sub);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .toggle-password:hover { color: var(--primary-cyan); }
+
+        #mainApp { display: none; animation: fadeIn 0.5s ease-out; }
+
+        .dashboard-grid {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.15);
+        }
+
+        .card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 18px;
+            color: var(--primary-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 12px;
+        }
+
+        /* CARD PROFIL */
+        .profile-card { text-align: center; }
+
+        .profile-avatar-container {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 15px;
+        }
+
+        .profile-avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--primary-cyan);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .avatar-edit-btn {
+            position: absolute;
+            bottom: 0; right: 0;
+            background: var(--primary-blue);
+            color: #fff;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            border: 2px solid var(--bg-dark);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: 0.3s;
+        }
+
+        .avatar-edit-btn:hover { transform: scale(1.1); background: var(--primary-cyan); color: #000; }
+
+        .profile-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .profile-info-group {
+            text-align: left;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .profile-info-group label {
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .profile-info-group span, .profile-info-group input {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* FITUR PENCARI PROFIL & LIST GURU/SISWA */
+        .search-profile-box {
+            margin-top: 15px;
+            border-top: 1px dashed var(--card-border);
+            padding-top: 12px;
+            text-align: left;
+        }
+
+        .search-profile-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.82rem;
+            margin-bottom: 10px;
+        }
+
+        .user-search-list {
+            max-height: 160px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-search-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--card-border);
+            padding: 8px 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .btn-chat-direct {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 0.85rem; color: var(--text-sub); margin-bottom: 8px; font-weight: 600; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(3, 7, 18, 0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-cyan);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-cyan));
+            color: #030712;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(0, 242, 254, 0.5); }
+        .btn-dev { background: linear-gradient(135deg, #a855f7, #c084fc); color: #fff; }
+        .btn-camera { background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; }
+        .btn-alpa { background: linear-gradient(135deg, #e11d48, #ff4655); color: #fff; }
+        .btn-logout {
+            background: rgba(255, 70, 85, 0.15);
+            color: var(--neon-red);
+            border: 1px solid var(--neon-red);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: 0.3s;
+        }
+        .btn-logout:hover { background: var(--neon-red); color: #fff; box-shadow: 0 0 15px var(--neon-red); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); padding: 10px; border-radius: 12px; text-align: center; }
+        .stat-box h4 { font-size: 0.7rem; color: var(--text-sub); }
+        .stat-box p { font-size: 1.1rem; font-weight: 800; font-family: 'Orbitron', sans-serif; }
+
+        #qrcode {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 14px;
+            min-height: 190px;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border) !important; min-height: 230px; background: #000; }
+
+        .table-container { grid-column: 1 / -1; }
+        table { width: 100%; border-collapse: collapse; text-align: left; margin-top: 10px; }
+        th, td { padding: 14px; border-bottom: 1px solid var(--card-border); font-size: 0.9rem; }
+        th { color: var(--text-sub); background: rgba(255, 255, 255, 0.02); }
+
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+        .badge-hadir { background: rgba(0, 230, 118, 0.15); color: var(--neon-green); border: 1px solid var(--neon-green); }
+        .badge-izin { background: rgba(255, 179, 0, 0.15); color: var(--neon-amber); border: 1px solid var(--neon-amber); }
+        .badge-sakit { background: rgba(255, 70, 85, 0.15); color: var(--neon-red); border: 1px solid var(--neon-red); }
+        .badge-alpa { background: rgba(225, 29, 72, 0.25); color: #fda4af; border: 1px solid var(--neon-darkred); }
+
+        .account-list { margin-top: 12px; max-height: 180px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 10px; padding: 8px; background: rgba(0,0,0,0.3); }
+
+        /* MODAL CHAT AKAN TAMPIL SAAT DIKLIK */
+        .chat-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 15000;
+        }
+
+        .chat-box-container {
+            background: var(--ios-wa-bg);
+            border: 1px solid var(--card-border);
+            width: 95%;
+            max-width: 500px;
+            height: 80vh;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .chat-header {
+            background: #1f2c34;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0b141a;
+        }
+
+        .chat-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.88rem;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .chat-bubble.me {
+            align-self: flex-end;
+            background: #005c4b;
+            color: #fff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-bubble.other {
+            align-self: flex-start;
+            background: #202c33;
+            color: #fff;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-time {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-input-bar {
+            background: #1f2c34;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-input-bar input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 20px;
+            background: #2a3942;
+            border: none;
+            color: #fff;
+            font-size: 0.88rem;
+        }
+
+        .chat-action-icon {
+            color: #8696a0;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .chat-action-icon:hover { color: var(--primary-cyan); }
+        .chat-action-icon.recording { color: var(--neon-red); animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* BOTTOM NAVBAR WA STYLE iOS */
+        .ios-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(18, 24, 38, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            z-index: 9999;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav-item i { font-size: 1.3rem; }
+        .nav-item.active, .nav-item:hover { color: var(--primary-cyan); }
+
+        /* MODAL PENGATURAN WA STYLE */
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 16000;
+        }
+
+        .settings-card {
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            width: 90%;
+            max-width: 440px;
+            border-radius: 20px;
+            padding: 20px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .setting-item:hover { background: rgba(255,255,255,0.02); }
+        .setting-item i { font-size: 1.1rem; margin-right: 12px; color: var(--primary-cyan); }
+
+        /* MODAL KHUSUS MENU NAVIGASI BAWAH (STATUS, CALLS, COMMUNITY) */
+        .general-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 16000;
+        }
+
+        .general-modal-card {
+            background: #0f172a;
+            border: 1px solid var(--card-border);
+            width: 90%;
+            max-width: 460px;
+            border-radius: 20px;
+            padding: 24px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .bug-fab {
+            position: fixed;
+            bottom: 75px;
+            left: 20px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(37, 211, 102, 0.4);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid var(--neon-green);
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 0 30px rgba(37, 211, 102, 0.3);
+            animation: floatUp 0.3s ease;
+        }
+
+        @keyframes floatUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="top-info-bar">
+        <div class="clock-display">
+            <i class="fa-solid fa-stopwatch"></i> <span id="clockHeader">00:00:00</span>
+        </div>
+        <div class="date-display">
+            <i class="fa-regular fa-calendar-check"></i> <span id="dateHeader">Syncing...</span>
+        </div>
+    </div>
+
+    <!-- ================= LOGIN PAGE ================= -->
+    <div id="loginPage" class="card">
+        <h2 style="justify-content: center; border: none; margin-bottom: 20px;">
+            <i class="fa-solid fa-bolt-lightning" style="color: var(--primary-cyan);"></i> CYBER ABSENSI
+        </h2>
+
+        <div class="role-selector">
+            <button id="btnRoleGuru" class="role-btn active" onclick="playClickSound(); switchLoginRole('guru')">
+                <i class="fa-solid fa-chalkboard-user"></i> Akses Guru
+            </button>
+            <button id="btnRoleSiswa" class="role-btn" onclick="playClickSound(); switchLoginRole('siswa')">
+                <i class="fa-solid fa-user-graduate"></i> Akses Siswa
+            </button>
+        </div>
+
+        <!-- FORM LOGIN GURU & DEV -->
+        <div id="formGuru">
+            <div class="dev-toggle">
+                <span><i class="fa-solid fa-terminal"></i> Mode Developer</span>
+                <div>
+                    <input type="checkbox" id="toggleDevMode" onchange="playClickSound(); toggleDevForm()">
+                    <label for="toggleDevMode" style="cursor:pointer;">Kelola System</label>
+                </div>
+            </div>
+
+            <div id="loginGuruFields">
+                <div class="form-group">
+                    <label>Username Guru</label>
+                    <input type="text" id="usernameGuru" placeholder="Masukkan username">
+                </div>
+                <div class="form-group">
+                    <label>Password Guru</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="passwordGuru" placeholder="Masukkan password">
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePasswordVisibility('passwordGuru', this)"></i>
+                    </div>
+                </div>
+                <button class="btn" onclick="playClickSound(); loginGuru()">
+                    <i class="fa-solid fa-shield-halved"></i> Authenticate
+                </button>
+            </div>
+
+            <!-- REGISTER GURU / SISWA BY DEV -->
+            <div id="registerGuruFields" style="display: none;">
+                <div class="form-group">
+                    <label>Dev Secret Key</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="devSecretKey" placeholder="Password Rahasia Dev">
+                        <i class="fa-solid fa-eye toggle-password" onclick="togglePasswordVisibility('devSecretKey', this)"></i>
+                    </div>
+                </div>
+                
+                <div style="border-top: 1px dashed var(--card-border); padding-top: 12px; margin-bottom:15px;">
+                    <label style="color: var(--dev-purple); font-weight:700;"><i class="fa-solid fa-user-plus"></i> Tambah Akun Guru Baru</label>
+                    <div class="form-group" style="margin-top:8px;"><input type="text" id="newGuruUser" placeholder="Username guru"></div>
+                    <div class="form-group">
+                        <div class="password-wrapper">
+                            <input type="password" id="newGuruPass" placeholder="Password guru">
+                            <i class="fa-solid fa-eye toggle-password" onclick="togglePasswordVisibility('newGuruPass', this)"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Jenis Kelamin Guru</label>
+                        <select id="newGuruGender">
+                            <option value="L">Laki-Laki (Bapak Guru)</option>
+                            <option value="P">Perempuan (Ibu Guru)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mata Pelajaran (Mapel SMA)</label>
+                        <select id="newGuruMapel">
+                            <option value="Matematika (Wajib)">Matematika (Wajib)</option>
+                            <option value="Matematika Lanjut">Matematika Lanjut</option>
+                            <option value="Fisika">Fisika</option>
+                            <option value="Kimia">Kimia</option>
+                            <option value="Biologi">Biologi</option>
+                            <option value="Informatika / TIK">Informatika / TIK</option>
+                            <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                            <option value="Bahasa Inggris">Bahasa Inggris</option>
+                            <option value="Sejarah Indonesia">Sejarah Indonesia</option>
+                            <option value="Sosiologi">Sosiologi</option>
+                            <option value="Ekonomi">Ekonomi</option>
+                            <option value="Geografi">Geografi</option>
+                            <option value="Pendidikan Pancasila / PPKn">Pendidikan Pancasila / PPKn</option>
+                            <option value="Pendidikan Agama Islam (PAI)">Pendidikan Agama Islam (PAI)</option>
+                            <option value="PJOK (Penjaskes)">PJOK (Penjaskes)</option>
+                            <option value="Seni Budaya">Seni Budaya</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-dev" onclick="playClickSound(); registerGuruByDev()">
+                        <i class="fa-solid fa-user-check"></i> Register Akun Guru
+                    </button>
+                </div>
+
+                <div style="border-top: 1px dashed var(--card-border); padding-top: 12px;">
+                    <label style="color: var(--neon-green); font-weight:700;"><i class="fa-solid fa-user-graduate"></i> Buatkan Akun Siswa & Password</label>
+                    <div class="form-group" style="margin-top:8px;"><input type="text" id="newSiswaUser" placeholder="Nama / Username Siswa"></div>
+                    <div class="form-group">
+                        <div class="password-wrapper">
+                            <input type="password" id="newSiswaPass" placeholder="Password Siswa">
+                            <i class="fa-solid fa-eye toggle-password" onclick="togglePasswordVisibility('newSiswaPass', this)"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Jenis Kelamin Siswa</label>
+                        <select id="newSiswaGender">
+                            <option value="L">Laki-Laki (Siswa)</option>
+                            <option value="P">Perempuan (Siswi)</option>
+                        </select>
+                    </div>
+                    <button class="btn" style="background: linear-gradient(135deg, #059669, #10b981); color:#fff;" onclick="playClickSound(); registerSiswaByDev()">
+                        <i class="fa-solid fa-user-plus"></i> Buat Akun Siswa
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM LOGIN SISWA -->
+        <div id="formSiswa" style="display: none;">
+            <div class="form-group">
+                <label>Nama / Username Siswa</label>
+                <input type="text" id="loginStudentName" placeholder="Masukkan nama/username">
+            </div>
+            <div class="form-group">
+                <label>Password Siswa</label>
+                <div class="password-wrapper">
+                    <input type="password" id="loginStudentPass" placeholder="Masukkan password siswa">
+                    <i class="fa-solid fa-eye toggle-password" onclick="togglePasswordVisibility('loginStudentPass', this)"></i>
+                </div>
+            </div>
+            <button class="btn" onclick="playClickSound(); loginSiswa()">
+                <i class="fa-solid fa-right-to-bracket"></i> Masuk Sistem Siswa
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= MAIN APP DASHBOARD ================= -->
+    <div id="mainApp">
+        <header>
+            <h1><i class="fa-solid fa-qrcode"></i> CYBER ATTENDANCE</h1>
+            <div class="user-info">
+                <span id="currentUserLabel"></span>
+                <button class="btn-logout" onclick="logout()"><i class="fa-solid fa-power-off"></i> Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            
+            <!-- FITUR PROFIL KIRI + PENCARI GURU/SISWA & CHAT DIRECT -->
+            <div class="card profile-card">
+                <h2><span><i class="fa-solid fa-id-card"></i> Profil Saya</span></h2>
+                
+                <div class="profile-avatar-container">
+                    <img id="profileAvatar" src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff" alt="Profile Picture" class="profile-avatar-img">
+                    <label for="uploadAvatarInput" class="avatar-edit-btn" title="Ubah Foto Profil">
+                        <i class="fa-solid fa-camera"></i>
+                    </label>
+                    <input type="file" id="uploadAvatarInput" accept="image/*" style="display: none;" onchange="updateProfileAvatar(event)">
+                </div>
+
+                <div id="profileRoleBadge" class="profile-badge access-guru">GURU</div>
+
+                <div class="profile-info-group">
+                    <label><i class="fa-solid fa-user"></i> Nama Lengkap</label>
+                    <span id="profNameDisplay">-</span>
+                </div>
+
+                <div class="profile-info-group">
+                    <label><i class="fa-solid fa-calendar-days"></i> Tanggal Lahir</label>
+                    <input type="date" id="profBirthDate" onchange="saveProfileData()">
+                </div>
+
+                <div class="profile-info-group">
+                    <label><i class="fa-brands fa-whatsapp"></i> Nomor WhatsApp</label>
+                    <input type="text" id="profPhone" placeholder="Contoh: 082156980519" onchange="saveProfileData()">
+                </div>
+
+                <div class="profile-info-group" id="profMapelGroup">
+                    <label><i class="fa-solid fa-book-open"></i> Mata Pelajaran Ditampu</label>
+                    <span id="profMapelDisplay" style="color:var(--primary-cyan);">-</span>
+                </div>
+
+                <!-- PENCARI PROFIL UNTUK CHAT -->
+                <div class="search-profile-box">
+                    <label style="color:var(--primary-cyan);"><i class="fa-solid fa-magnifying-glass"></i> Cari Kontak Profil / Guru</label>
+                    <input type="text" id="searchUserInput" class="search-profile-input" placeholder="Ketik nama kontak..." onkeyup="filterUserList()">
+                    <div id="userSearchList" class="user-search-list"></div>
+                </div>
+            </div>
+
+            <!-- KONTEN UTAMA DASHBOARD -->
+            <div class="content-grid">
+                
+                <div id="guruPanel" class="card">
+                    <h2><span><i class="fa-solid fa-sliders"></i> Sesi Absensi & Kontrol</span></h2>
+                    <div class="form-group">
+                        <label>Kode Sesi / Mata Pelajaran</label>
+                        <input type="text" id="sessionCode" placeholder="Contoh: INFORMATIKA-X">
+                    </div>
+                    <div class="form-group" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <div><label>Mulai</label><input type="time" id="startTime"></div>
+                        <div><label>Selesai</label><input type="time" id="endTime"></div>
+                    </div>
+                    <button class="btn" onclick="playClickSound(); generateQRCode()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate QR Code
+                    </button>
+                    <div id="qrcode"></div>
+                    <br>
+                    <button id="btnDownload" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color:#fff; display:none; margin-bottom:15px;" onclick="downloadQRCode()">
+                        <i class="fa-solid fa-download"></i> Download Image QR
+                    </button>
+
+                    <div style="border-top: 1px dashed var(--card-border); padding-top: 15px; margin-top: 15px;">
+                        <label style="color: var(--neon-red); font-size:0.9rem;"><i class="fa-solid fa-user-xmark"></i> Fitur Tandai Alpa (Tanpa QR)</label>
+                        <div class="form-group" style="margin-top:10px;">
+                            <input type="text" id="alpaStudentName" placeholder="Masukkan nama siswa yg Alpa">
+                        </div>
+                        <button class="btn btn-alpa" onclick="playClickSound(); submitAlpaByGuru()">
+                            <i class="fa-solid fa-user-slash"></i> Tandai Siswa Alpa
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2><span><i class="fa-solid fa-camera-retro"></i> Form Presensi</span></h2>
+                    <div class="form-group">
+                        <label>Nama Student</label>
+                        <input type="text" id="studentName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Status Kehadiran</label>
+                        <select id="statusSelect" onchange="toggleAbsenMode()">
+                            <option value="Hadir">Hadir (Scan QR Scanner)</option>
+                            <option value="Izin">Izin (Sertakan Keterangan)</option>
+                            <option value="Sakit">Sakit (Sertakan Keterangan)</option>
+                        </select>
+                    </div>
+                    <div id="cameraSection">
+                        <button class="btn btn-camera" onclick="playClickSound(); startScanner()">
+                            <i class="fa-solid fa-video"></i> Aktifkan Optical Scanner
+                        </button>
+                        <div id="reader" style="margin-top:12px;"></div>
+                    </div>
+                    <button id="btnSubmitIzin" class="btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color:#fff; display:none;" onclick="submitIzinSakit()">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Status Laporan
+                    </button>
+                </div>
+
+                <div class="card table-container">
+                    <h2>
+                        <span><i class="fa-solid fa-database"></i> Live Analytics & Data Log</span>
+                        <button id="btnClearLog" class="btn" style="width:auto; padding:6px 14px; font-size:0.75rem; background:rgba(239, 68, 68, 0.2); color:var(--neon-red); border:1px solid var(--neon-red);" onclick="clearAttendanceList()">
+                            <i class="fa-solid fa-trash"></i> Clear Log
+                        </button>
+                    </h2>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <h4>HADIR</h4>
+                            <p id="statHadir" style="color:var(--neon-green)">0</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>IZIN</h4>
+                            <p id="statIzin" style="color:var(--neon-amber)">0</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>SAKIT</h4>
+                            <p id="statSakit" style="color:var(--neon-red)">0</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>ALPA</h4>
+                            <p id="statAlpa" style="color:var(--neon-darkred)">0</p>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Waktu Log</th>
+                                <th>Nama Student</th>
+                                <th>Sesi / Keterangan</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceList"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL ROOM CHAT INTERAKTIF -->
+    <div class="chat-modal-overlay" id="chatModal">
+        <div class="chat-box-container">
+            <div class="chat-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <i class="fa-solid fa-arrow-left chat-action-icon" onclick="closeChatModal()"></i>
+                    <div>
+                        <h4 id="chatTargetName" style="color:#fff; font-size:0.95rem;">Guru Target</h4>
+                        <span style="font-size:0.7rem; color:var(--neon-green);"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Online</span>
+                    </div>
+                </div>
+                <div>
+                    <i class="fa-solid fa-phone chat-action-icon" style="margin-right:15px;" onclick="openCallsModal()"></i>
+                    <i class="fa-solid fa-video chat-action-icon" onclick="openCallsModal()"></i>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessageArea"></div>
+
+            <div class="chat-input-bar">
+                <label for="chatFileInput" class="chat-action-icon" title="Kirim Foto / Video / File">
+                    <i class="fa-solid fa-paperclip"></i>
+                </label>
+                <input type="file" id="chatFileInput" accept="image/*,video/*,application/pdf" style="display:none;" onchange="handleMediaUpload(event)">
+                
+                <input type="text" id="chatMessageInput" placeholder="Ketik pesan..." onkeypress="handleChatKeyPress(event)">
+                
+                <i id="btnVoiceNote" class="fa-solid fa-microphone chat-action-icon" title="Rekam VN" onclick="toggleVoiceRecording()"></i>
+                
+                <i class="fa-solid fa-paper-plane chat-action-icon" style="color:var(--primary-cyan);" onclick="sendChatMessage()"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL STATUS / PENGUMUMAN -->
+    <div class="general-modal-overlay" id="statusModal">
+        <div class="general-modal-card">
+            <h3 style="color:#fff; border-bottom:1px solid var(--card-border); padding-bottom:12px; margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fa-regular fa-circle-dot" style="color:var(--primary-cyan)"></i> Status & Pengumuman</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeGeneralModal('statusModal')"></i>
+            </h3>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:15px;">Informasi dan pengumuman aktif sekolah:</p>
+            <div style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:12px; border-radius:12px; margin-bottom:10px;">
+                <h5 style="color:var(--primary-cyan);">📢 Presensi Kehadiran Aktif</h5>
+                <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">Seluruh siswa diimbau melakukan scan QR presensi sebelum jam pelajaran dimulai.</p>
+            </div>
+            <div style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:12px; border-radius:12px;">
+                <h5 style="color:var(--neon-green);">✅ Sistem Online</h5>
+                <p style="font-size:0.8rem; color:#ccc; margin-top:4px;">Server Cyber Attendance beroperasi normal.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PANGGILAN -->
+    <div class="general-modal-overlay" id="callsModal">
+        <div class="general-modal-card">
+            <h3 style="color:#fff; border-bottom:1px solid var(--card-border); padding-bottom:12px; margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fa-solid fa-phone" style="color:var(--primary-cyan)"></i> Riwayat Panggilan</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeGeneralModal('callsModal')"></i>
+            </h3>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:15px;">Fitur Panggilan Suara & Video Call:</p>
+            <div style="text-align:center; padding:20px 0;">
+                <i class="fa-solid fa-phone-slash" style="font-size:2.5rem; color:var(--text-sub); margin-bottom:10px;"></i>
+                <p style="font-size:0.85rem; color:var(--text-sub);">Belum ada riwayat panggilan berlangsung.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KOMUNITAS -->
+    <div class="general-modal-overlay" id="communityModal">
+        <div class="general-modal-card">
+            <h3 style="color:#fff; border-bottom:1px solid var(--card-border); padding-bottom:12px; margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fa-solid fa-users" style="color:var(--primary-cyan)"></i> Komunitas Sekolah Cyber</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeGeneralModal('communityModal')"></i>
+            </h3>
+            <p style="font-size:0.85rem; color:var(--text-sub); margin-bottom:15px;">Grup Komunitas Terhubung:</p>
+            <div style="display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:12px; border-radius:12px; margin-bottom:10px;">
+                <i class="fa-solid fa-graduation-cap" style="font-size:1.5rem; color:var(--dev-purple)"></i>
+                <div>
+                    <h5 style="color:#fff;">Grup Utama Guru & Staf</h5>
+                    <p style="font-size:0.75rem; color:var(--text-sub);">Forum koordinasi pengajar</p>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:12px; border-radius:12px;">
+                <i class="fa-solid fa-laptop-code" style="font-size:1.5rem; color:var(--neon-green)"></i>
+                <div>
+                    <h5 style="color:#fff;">Komunitas Siswa Cyber</h5>
+                    <p style="font-size:0.75rem; color:var(--text-sub);">Diskusi & Informasi Pembelajaran</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION STYLE WHATSAPP iOS -->
+    <div class="ios-bottom-nav" id="iosBottomNav" style="display: none;">
+        <div class="nav-item" id="navItemStatus" onclick="playClickSound(); setActiveNav(this); openStatusModal();">
+            <i class="fa-regular fa-circle-dot"></i> Status
+        </div>
+        <div class="nav-item" id="navItemCalls" onclick="playClickSound(); setActiveNav(this); openCallsModal();">
+            <i class="fa-solid fa-phone"></i> Panggilan
+        </div>
+        <div class="nav-item" id="navItemCommunity" onclick="playClickSound(); setActiveNav(this); openCommunityModal();">
+            <i class="fa-solid fa-users"></i> Komunitas
+        </div>
+        <div class="nav-item active" id="navItemChat" onclick="playClickSound(); setActiveNav(this); focusSearchUser();">
+            <i class="fa-solid fa-comment-dots"></i> Chat
+        </div>
+        <div class="nav-item" id="navItemSettings" onclick="playClickSound(); setActiveNav(this); openSettingsModal();">
+            <i class="fa-solid fa-gear"></i> Pengaturan
+        </div>
+    </div>
+
+    <!-- MODAL PENGATURAN ALA WA iOS -->
+    <div class="settings-modal-overlay" id="settingsModal">
+        <div class="settings-card">
+            <h3 style="color:#fff; border-bottom:1px solid var(--card-border); padding-bottom:12px; margin-bottom:15px; display:flex; justify-content:space-between;">
+                <span><i class="fa-solid fa-gear"></i> Pengaturan Aplikasi</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer;" onclick="closeSettingsModal()"></i>
+            </h3>
+
+            <div class="setting-item" onclick="alert('Menu Akun & Keamanan')">
+                <span><i class="fa-solid fa-key"></i> Akun & Keamanan</span>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-sub);"></i>
+            </div>
+            <div class="setting-item" onclick="alert('Menu Privasi & Pemblokiran')">
+                <span><i class="fa-solid fa-lock"></i> Privasi & Pemblokiran</span>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-sub);"></i>
+            </div>
+            <div class="setting-item" onclick="alert('Menu Chat & Tampilan Theme')">
+                <span><i class="fa-solid fa-comment"></i> Chat & Tampilan Theme</span>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-sub);"></i>
+            </div>
+            <div class="setting-item" onclick="alert('Menu Notifikasi Suara')">
+                <span><i class="fa-solid fa-bell"></i> Notifikasi Suara</span>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-sub);"></i>
+            </div>
+            <div class="setting-item" onclick="alert('Menu Penyimpanan & Data Log')">
+                <span><i class="fa-solid fa-database"></i> Penyimpanan & Data Log</span>
+                <i class="fa-solid fa-chevron-right" style="color:var(--text-sub);"></i>
+            </div>
+            
+            <button class="btn btn-logout" style="margin-top:20px;" onclick="logout()">
+                <i class="fa-solid fa-right-from-bracket"></i> Keluar Aplikasi
+            </button>
+        </div>
+    </div>
+
+    <div class="bug-fab" onclick="openBugModal()">
+        <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> Laporkan Bug
+    </div>
+
+    <div class="modal-overlay" id="bugModal">
+        <div class="modal-box">
+            <h3 style="color: var(--neon-green); margin-bottom: 15px; font-family:'Orbitron'; display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-bug"></i> Laporkan Bug</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer; color:var(--text-sub);" onclick="closeBugModal()"></i>
+            </h3>
+            <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:15px;">
+                Kirimkan laporan langsung ke Developer WhatsApp <b>082156980519</b>.
+            </p>
+            <div class="form-group"><label>Nama Pelapor</label><input type="text" id="bugReporterName"></div>
+            <div class="form-group">
+                <label>Deskripsi Kendala / Bug</label>
+                <textarea id="bugDescription" rows="4" style="width:100%; background:rgba(3,7,18,0.7); border:1px solid var(--card-border); border-radius:10px; color:#fff; padding:10px; outline:none;"></textarea>
+            </div>
+            <button class="btn" style="background: linear-gradient(135deg, #25D366, #128C7E); color:#fff;" onclick="sendBugToWhatsApp()">
+                <i class="fa-brands fa-whatsapp"></i> Send Report to WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const DEV_SECRET_KEY = "riksskece";
+        const WA_DEV_NUMBER = "6282156980519";
+
+        let currentRole = "guru";
+        let loggedInUser = null;
+        let html5QrcodeScanner = null;
+        let activeChatTarget = null;
+        
+        // REKAM SUARA VN
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        function togglePasswordVisibility(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playClickSound() {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            } catch(e){}
+        }
+
+        function playSuccessSound() {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            } catch(e){}
+        }
+
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.vy = (Math.random() - 0.5) * 0.8;
+                this.size = Math.random() * 2 + 1;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(0, 242, 254, 0.4)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 50; i++) particles.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.update(); p.draw();
+                for (let j = index + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 110) {
+                        ctx.strokeStyle = `rgba(0, 242, 254, ${1 - dist / 110 * 0.8})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById("clockHeader").innerText = now.toLocaleTimeString('id-ID');
+            document.getElementById("dateHeader").innerText = now.toLocaleDateString('id-ID', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function openBugModal() { playClickSound(); document.getElementById("bugModal").style.display = "flex"; }
+        function closeBugModal() { playClickSound(); document.getElementById("bugModal").style.display = "none"; }
+
+        function sendBugToWhatsApp() {
+            const name = document.getElementById("bugReporterName").value.trim();
+            const desc = document.getElementById("bugDescription").value.trim();
+            if (!name || !desc) { alert("Harap isi Nama dan Deskripsi!"); return; }
+            const message = `*[LAPORAN BUG]*%0ANama: ${name}%0ADeskripsi: ${encodeURIComponent(desc)}`;
+            window.open(`https://wa.me/${WA_DEV_NUMBER}?text=${message}`, '_blank');
+            closeBugModal();
+        }
+
+        function getGuruAccounts() { return JSON.parse(localStorage.getItem("guruAccounts") || '[{"user":"guru","pass":"123","gender":"L","mapel":"Informatika / TIK"}]'); }
+        function saveGuruAccounts(acc) { localStorage.setItem("guruAccounts", JSON.stringify(acc)); }
+        function getSiswaAccounts() { return JSON.parse(localStorage.getItem("siswaAccounts") || '[{"user":"siswa","pass":"123","gender":"L"}]'); }
+        function saveSiswaAccounts(acc) { localStorage.setItem("siswaAccounts", JSON.stringify(acc)); }
+
+        function switchLoginRole(role) {
+            currentRole = role;
+            document.getElementById("btnRoleGuru").classList.toggle("active", role === 'guru');
+            document.getElementById("btnRoleSiswa").classList.toggle("active", role === 'siswa');
+            document.getElementById("formGuru").style.display = role === 'guru' ? 'block' : 'none';
+            document.getElementById("formSiswa").style.display = role === 'siswa' ? 'block' : 'none';
+        }
+
+        function toggleDevForm() {
+            const isDev = document.getElementById("toggleDevMode").checked;
+            document.getElementById("loginGuruFields").style.display = isDev ? "none" : "block";
+            document.getElementById("registerGuruFields").style.display = isDev ? "block" : "none";
+        }
+
+        function registerGuruByDev() {
+            const key = document.getElementById("devSecretKey").value;
+            const u = document.getElementById("newGuruUser").value.trim();
+            const p = document.getElementById("newGuruPass").value.trim();
+            const g = document.getElementById("newGuruGender").value;
+            const m = document.getElementById("newGuruMapel").value;
+
+            if (key !== DEV_SECRET_KEY) { alert("Kode Dev Pass Salah!"); return; }
+            if (!u || !p) { alert("Isi Username & Password!"); return; }
+
+            let accounts = getGuruAccounts();
+            if (accounts.some(a => a.user === u)) { alert("Guru sudah terdaftar!"); return; }
+
+            accounts.push({ user: u, pass: p, gender: g, mapel: m });
+            saveGuruAccounts(accounts);
+            alert(`Guru "${u}" Berhasil Didaftarkan!`);
+        }
+
+        function registerSiswaByDev() {
+            const key = document.getElementById("devSecretKey").value;
+            const u = document.getElementById("newSiswaUser").value.trim();
+            const p = document.getElementById("newSiswaPass").value.trim();
+            const g = document.getElementById("newSiswaGender").value;
+
+            if (key !== DEV_SECRET_KEY) { alert("Kode Dev Pass Salah!"); return; }
+            if (!u || !p) { alert("Isi Username & Password!"); return; }
+
+            let accounts = getSiswaAccounts();
+            if (accounts.some(a => a.user === u)) { alert("Siswa sudah terdaftar!"); return; }
+
+            accounts.push({ user: u, pass: p, gender: g });
+            saveSiswaAccounts(accounts);
+            alert(`Siswa "${u}" Berhasil Dibuat!`);
+        }
+
+        function loginGuru() {
+            const u = document.getElementById("usernameGuru").value.trim();
+            const p = document.getElementById("passwordGuru").value.trim();
+            const found = getGuruAccounts().find(a => a.user === u && a.pass === p);
+
+            if (found) {
+                loggedInUser = { ...found, role: "guru" };
+                showDashboard();
+            } else alert("Credential Guru Salah!");
+        }
+
+        function loginSiswa() {
+            const u = document.getElementById("loginStudentName").value.trim();
+            const p = document.getElementById("loginStudentPass").value.trim();
+            const found = getSiswaAccounts().find(a => a.user === u && a.pass === p);
+
+            if (found) {
+                loggedInUser = { ...found, role: "siswa" };
+                showDashboard();
+            } else alert("Username/Password Siswa Salah!");
+        }
+
+        function showDashboard() {
+            document.getElementById("loginPage").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            document.getElementById("iosBottomNav").style.display = "flex";
+
+            let displayTitle = (loggedInUser.role === "guru" ? (loggedInUser.gender === "L" ? "Bapak " : "Ibu ") : "") + loggedInUser.user;
+            document.getElementById("currentUserLabel").innerHTML = `<i class="fa-solid fa-user" style="color:var(--primary-cyan)"></i> <b>${displayTitle}</b>`;
+
+            if (loggedInUser.role === "siswa") {
+                document.getElementById("guruPanel").style.display = "none";
+                document.getElementById("studentName").value = loggedInUser.user;
+            } else {
+                document.getElementById("guruPanel").style.display = "block";
+                document.getElementById("studentName").value = displayTitle;
+                document.getElementById("studentName").removeAttribute("readonly");
+            }
+
+            loadProfileData();
+            renderUserSearchList();
+            renderSavedAttendanceLogs();
+        }
+
+        function logout() { location.reload(); }
+
+        function loadProfileData() {
+            const savedProf = JSON.parse(localStorage.getItem("profileData_" + loggedInUser.user) || "{}");
+            document.getElementById("profNameDisplay").innerText = loggedInUser.user;
+            document.getElementById("profileRoleBadge").innerText = loggedInUser.role.toUpperCase();
+
+            if (loggedInUser.role === "guru") {
+                document.getElementById("profMapelGroup").style.display = "block";
+                document.getElementById("profMapelDisplay").innerText = loggedInUser.mapel || "Umum";
+            } else {
+                document.getElementById("profMapelGroup").style.display = "none";
+            }
+
+            if (savedProf.birthDate) document.getElementById("profBirthDate").value = savedProf.birthDate;
+            if (savedProf.phone) document.getElementById("profPhone").value = savedProf.phone;
+            if (savedProf.avatar) document.getElementById("profileAvatar").src = savedProf.avatar;
+        }
+
+        function saveProfileData() {
+            let savedProf = JSON.parse(localStorage.getItem("profileData_" + loggedInUser.user) || "{}");
+            savedProf.birthDate = document.getElementById("profBirthDate").value;
+            savedProf.phone = document.getElementById("profPhone").value;
+            localStorage.setItem("profileData_" + loggedInUser.user, JSON.stringify(savedProf));
+        }
+
+        function updateProfileAvatar(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById("profileAvatar").src = e.target.result;
+                let savedProf = JSON.parse(localStorage.getItem("profileData_" + loggedInUser.user) || "{}");
+                savedProf.avatar = e.target.result;
+                localStorage.setItem("profileData_" + loggedInUser.user, JSON.stringify(savedProf));
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* FITUR NAVIGASI BAWAH ACTIVE STATE & MODALS */
+        function setActiveNav(element) {
+            document.querySelectorAll('.ios-bottom-nav .nav-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function openStatusModal() { document.getElementById("statusModal").style.display = "flex"; }
+        function openCallsModal() { document.getElementById("callsModal").style.display = "flex"; }
+        function openCommunityModal() { document.getElementById("communityModal").style.display = "flex"; }
+        function openSettingsModal() { document.getElementById("settingsModal").style.display = "flex"; }
+        function closeSettingsModal() { document.getElementById("settingsModal").style.display = "none"; }
+        function closeGeneralModal(id) { document.getElementById(id).style.display = "none"; }
+
+        function focusSearchUser() {
+            const input = document.getElementById("searchUserInput");
+            if (input) {
+                input.scrollIntoView({ behavior: 'smooth' });
+                input.focus();
+            }
+        }
+
+        /* FITUR PENCARI GURU & CHAT */
+        function renderUserSearchList(filterText = "") {
+            const container = document.getElementById("userSearchList");
+            container.innerHTML = "";
+            
+            const guruList = getGuruAccounts();
+            const siswaList = getSiswaAccounts();
+            const allUsers = [...guruList.map(g => ({...g, role:'guru'})), ...siswaList.map(s => ({...s, role:'siswa'}))];
+
+            allUsers.forEach(u => {
+                if (u.user === loggedInUser.user) return;
+                if (filterText && !u.user.toLowerCase().includes(filterText.toLowerCase())) return;
+
+                const div = document.createElement("div");
+                div.className = "user-search-item";
+                div.innerHTML = `
+                    <div>
+                        <b>${u.user}</b> <span style="font-size:0.7rem; color:var(--text-sub);">(${u.role.toUpperCase()})</span>
+                    </div>
+                    <button class="btn-chat-direct" onclick="openChatWith('${u.user}')"><i class="fa-solid fa-message"></i> Chat</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterUserList() {
+            const txt = document.getElementById("searchUserInput").value;
+            renderUserSearchList(txt);
+        }
+
+        function openChatWith(targetUser) {
+            playClickSound();
+            activeChatTarget = targetUser;
+            document.getElementById("chatTargetName").innerText = targetUser;
+            document.getElementById("chatModal").style.display = "flex";
+            renderChatMessages();
+        }
+
+        function closeChatModal() {
+            document.getElementById("chatModal").style.display = "none";
+        }
+
+        function getChatKey() {
+            const users = [loggedInUser.user, activeChatTarget].sort();
+            return `chat_${users[0]}_${users[1]}`;
+        }
+
+        function renderChatMessages() {
+            const area = document.getElementById("chatMessageArea");
+            area.innerHTML = "";
+            const key = getChatKey();
+            const logs = JSON.parse(localStorage.getItem(key) || "[]");
+
+            logs.forEach(msg => {
+                const isMe = msg.sender === loggedInUser.user;
+                const bubble = document.createElement("div");
+                bubble.className = `chat-bubble ${isMe ? 'me' : 'other'}`;
+
+                let contentHtml = msg.text;
+                if (msg.mediaType === 'image') {
+                    contentHtml = `<img src="${msg.mediaUrl}" style="max-width:100%; border-radius:10px; margin-bottom:5px;"><br>${msg.text || ''}`;
+                } else if (msg.mediaType === 'video') {
+                    contentHtml = `<video src="${msg.mediaUrl}" controls style="max-width:100%; border-radius:10px; margin-bottom:5px;"></video><br>${msg.text || ''}`;
+                } else if (msg.mediaType === 'audio') {
+                    contentHtml = `<audio src="${msg.mediaUrl}" controls style="max-width:100%; margin-bottom:5px;"></audio>`;
+                }
+
+                bubble.innerHTML = `${contentHtml}<div class="chat-time">${msg.time}</div>`;
+                area.appendChild(bubble);
+            });
+
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function sendChatMessage(extraMsg = {}) {
+            const input = document.getElementById("chatMessageInput");
+            const text = input.value.trim();
+            if (!text && !extraMsg.mediaUrl) return;
+
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const key = getChatKey();
+            let logs = JSON.parse(localStorage.getItem(key) || "[]");
+
+            const newMsg = {
+                sender: loggedInUser.user,
+                text: text,
+                time: time,
+                ...extraMsg
+            };
+
+            logs.push(newMsg);
+            localStorage.setItem(key, JSON.stringify(logs));
+
+            input.value = "";
+            renderChatMessages();
+            playSuccessSound();
+        }
+
+        function handleChatKeyPress(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        function handleMediaUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                let mediaType = 'image';
+                if (file.type.startsWith('video/')) mediaType = 'video';
+
+                sendChatMessage({ mediaType: mediaType, mediaUrl: evt.target.result });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* REKAM SUARA VN */
+        function toggleVoiceRecording() {
+            const btn = document.getElementById("btnVoiceNote");
+            if (!isRecording) {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const reader = new FileReader();
+                        reader.onload = function(evt) {
+                            sendChatMessage({ mediaType: 'audio', mediaUrl: evt.target.result });
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add("recording");
+                }).catch(() => alert("Izin mikrofon ditolak!"));
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.classList.remove("recording");
+            }
+        }
+
+        function generateQRCode() {
+            const code = document.getElementById("sessionCode").value;
+            if (!code) { alert("Isi Kode Sesi!"); return; }
+            const container = document.getElementById("qrcode");
+            container.innerHTML = "";
+            new QRCode(container, { text: code, width: 170, height: 170 });
+            document.getElementById("btnDownload").style.display = "flex";
+        }
+
+        function downloadQRCode() {
+            const canvas = document.querySelector("#qrcode canvas");
+            if (canvas) {
+                const a = document.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = `QR_${document.getElementById("sessionCode").value}.png`;
+                a.click();
+            }
+        }
+
+        function toggleAbsenMode() {
+            const val = document.getElementById("statusSelect").value;
+            document.getElementById("cameraSection").style.display = val === "Hadir" ? "block" : "none";
+            document.getElementById("btnSubmitIzin").style.display = val !== "Hadir" ? "flex" : "none";
+        }
+
+        function addAttendanceRow(name, session, status) {
+            const time = new Date().toLocaleTimeString('id-ID');
+            let logs = JSON.parse(localStorage.getItem("permanentAttendanceLogs") || "[]");
+            logs.unshift({ time, name, session, status });
+            localStorage.setItem("permanentAttendanceLogs", JSON.stringify(logs));
+            renderSavedAttendanceLogs();
+            playSuccessSound();
+        }
+
+        function renderSavedAttendanceLogs() {
+            const logs = JSON.parse(localStorage.getItem("permanentAttendanceLogs") || "[]");
+            const tbody = document.getElementById("attendanceList");
+            tbody.innerHTML = "";
+            let cH = 0, cI = 0, cS = 0, cA = 0;
+
+            logs.forEach(log => {
+                let cls = "badge-hadir";
+                if (log.status === "Hadir") cH++;
+                else if (log.status === "Izin") { cls = "badge-izin"; cI++; }
+                else if (log.status === "Sakit") { cls = "badge-sakit"; cS++; }
+                else if (log.status === "Alpa") { cls = "badge-alpa"; cA++; }
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${log.time}</td>
+                    <td><b>${log.name}</b></td>
+                    <td style="color:var(--primary-cyan);">${log.session}</td>
+                    <td><span class="badge ${cls}">${log.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("statHadir").innerText = cH;
+            document.getElementById("statIzin").innerText = cI;
+            document.getElementById("statSakit").innerText = cS;
+            document.getElementById("statAlpa").innerText = cA;
+        }
+
+        function submitIzinSakit() {
+            const name = document.getElementById("studentName").value;
+            const status = document.getElementById("statusSelect").value;
+            if (!name) return;
+            addAttendanceRow(name, "Surat Keterangan", status);
+            alert(`Status ${status} berhasil dikirim!`);
+        }
+
+        function submitAlpaByGuru() {
+            const name = document.getElementById("alpaStudentName").value.trim();
+            const session = document.getElementById("sessionCode").value.trim() || "Regulasi Guru";
+            if (!name) { alert("Isi nama siswa!"); return; }
+            addAttendanceRow(name, session, "Alpa");
+            alert(`Siswa "${name}" ditandai ALPA.`);
+            document.getElementById("alpaStudentName").value = "";
+        }
+
+        function startScanner() {
+            if (html5QrcodeScanner) html5QrcodeScanner.clear();
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 200 });
+            html5QrcodeScanner.render((text) => {
+                const name = document.getElementById("studentName").value;
+                if (!name) return;
+                addAttendanceRow(name, text, "Hadir");
+                alert(`Absen Berhasil!\nSesi: ${text}`);
+                html5QrcodeScanner.clear();
+            });
+        }
+
+        function clearAttendanceList() {
+            if (!confirm("Hapus seluruh data log absensi?")) return;
+            localStorage.removeItem("permanentAttendanceLogs");
+            renderSavedAttendanceLogs();
+        }
+    </script>
+</body>
+</html>
